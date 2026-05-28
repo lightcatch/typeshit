@@ -1,0 +1,24 @@
+[package]
+name = "typeshit"
+version = "0.1.0"
+description = "A lightweight, beautiful editor for txt and markdown."
+authors = ["typeshit contributors"]
+edition = "2021"
+
+[lib]
+name = "typeshit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-store = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-single-instance = "2"
