@@ -84,6 +84,6 @@ jobs:
             `Ctrl + N / O / S / Shift+S` 新建 / 打开 / 保存 / 另存
             `Ctrl + W / Tab` 关闭标签 / 切换标签
             `Ctrl + / / T / F` 切换视图 / 切换主题 / 查找
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
