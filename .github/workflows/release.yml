@@ -59,6 +59,31 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "typeshit ${{ github.ref_name }}"
+          releaseBody: |
+            轻量化的 txt / markdown 文本编辑器。基于 Tauri 2 + Svelte 5 + CodeMirror 6 构建，
+            体积约 12 MB，启动快、内存占用低。
+
+            ## 下载
+
+            - **Windows (x64)** — `typeshit_*_x64-setup.exe`
+            - **macOS (Apple Silicon)** — `typeshit_*_aarch64.dmg`
+            - **macOS (Intel)** — `typeshit_*_x64.dmg`
+            - **Linux** — `typeshit_*_amd64.AppImage` 或 `typeshit_*_amd64.deb`
+
+            ## 主要特性
+
+            - 支持 `.txt` / `.md`，Markdown 实时预览（编辑 / 预览 / 分屏）
+            - 14 种语言代码块语法高亮
+            - 浅色 / 深色主题，自动记忆
+            - 多标签页 + 滚动同步
+            - 单实例：再次「打开方式」会作为新标签加入已有窗口
+            - 自定义无边框窗口，简洁现代
+
+            ## 快捷键
+
+            `Ctrl + N / O / S / Shift+S` 新建 / 打开 / 保存 / 另存
+            `Ctrl + W / Tab` 关闭标签 / 切换标签
+            `Ctrl + / / T / F` 切换视图 / 切换主题 / 查找
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
