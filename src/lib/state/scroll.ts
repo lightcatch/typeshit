@@ -6,6 +6,12 @@ class ScrollSync {
   source: "editor" | "preview" | null = null;
   private timer: number | null = null;
 
+  resetSource() {
+    if (this.timer) window.clearTimeout(this.timer);
+    this.timer = null;
+    this.source = null;
+  }
+
   fromEditor(ratio: number) {
     if (this.source === "preview") return;
     this.source = "editor";

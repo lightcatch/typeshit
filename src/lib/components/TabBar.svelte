@@ -25,13 +25,15 @@
       {#each tabs.list as tab (tab.id)}
         {@const isActive = tab.id === tabs.activeId}
         {@const dirty = tabs.isDirty(tab)}
-        <button
+        <div
           class="tab"
           class:active={isActive}
           role="tab"
+          tabindex="0"
           aria-selected={isActive}
           title={tab.path ?? tab.name}
           onclick={() => tabs.activate(tab.id)}
+          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tabs.activate(tab.id); } }}
           onmousedown={(e) => onMiddleClick(e, tab.id)}
         >
           <span class="tab-icon" aria-hidden="true">
@@ -42,22 +44,21 @@
             {/if}
           </span>
           <span class="tab-name">{tab.name}</span>
-          <span
+          <button
+            type="button"
             class="tab-close"
             class:dirty
-            role="button"
             tabindex="-1"
             aria-label="关闭"
             onclick={(e) => onClose(e, tab.id)}
-            onkeydown={(e) => { if (e.key === "Enter") onClose(e as unknown as MouseEvent, tab.id); }}
           >
             {#if dirty}
               <span class="dot"></span>
             {:else}
               <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.2"/></svg>
             {/if}
-          </span>
-        </button>
+          </button>
+        </div>
       {/each}
     </div>
     <button class="tab-new" onclick={onNew} title="新建标签 (Ctrl+N)" aria-label="新建标签">
@@ -101,6 +102,12 @@
     font-size: 12.5px;
     transition: background 0.1s, color 0.1s;
     position: relative;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
   .tab:hover { color: var(--text); background: var(--hover); }
   .tab.active {

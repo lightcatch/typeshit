@@ -1,3 +1,5 @@
+import { scrollSync } from "./scroll";
+
 export type FileKind = "txt" | "md";
 
 export interface Tab {
@@ -8,7 +10,8 @@ export interface Tab {
   content: string;
   savedContent: string;
   cursor: { line: number; col: number };
-  scrollRatio: number;
+  editorScrollTop: number;
+  previewRatio: number;
 }
 
 let nextId = 0;
@@ -31,6 +34,27 @@ class TabsStore {
 
   active = $derived(this.list.find((t) => t.id === this.activeId) ?? null);
 
+  private rememberActiveScroll() {
+    if (!this.activeId) return;
+    const tab = this.list.find((t) => t.id === this.activeId);
+    if (!tab) return;
+
+    if (scrollSync.editorView) {
+      const el = scrollSync.editorView.scrollDOM;
+      tab.editorScrollTop = el.scrollTop;
+      if (!scrollSync.previewEl) {
+        const max = el.scrollHeight - el.clientHeight;
+        tab.previewRatio = max > 0 ? el.scrollTop / max : 0;
+      }
+    }
+
+    if (scrollSync.previewEl) {
+      const el = scrollSync.previewEl;
+      const max = el.scrollHeight - el.clientHeight;
+      tab.previewRatio = max > 0 ? el.scrollTop / max : 0;
+    }
+  }
+
   isDirty(t: Tab): boolean {
     return t.content !== t.savedContent;
   }
@@ -40,6 +64,7 @@ class TabsStore {
   }
 
   newUntitled(kind: FileKind = "md"): Tab {
+    this.rememberActiveScroll();
     const tab: Tab = {
       id: newId(),
       path: null,
@@ -48,7 +73,8 @@ class TabsStore {
       content: "",
       savedContent: "",
       cursor: { line: 1, col: 1 },
-      scrollRatio: 0,
+      editorScrollTop: 0,
+      previewRatio: 0,
     };
     this.list.push(tab);
     this.activeId = tab.id;
@@ -58,9 +84,11 @@ class TabsStore {
   openLoaded(path: string, content: string): Tab {
     const existing = this.list.find((t) => t.path === path);
     if (existing) {
+      this.rememberActiveScroll();
       this.activeId = existing.id;
       return existing;
     }
+    this.rememberActiveScroll();
     const name = basename(path);
     const tab: Tab = {
       id: newId(),
@@ -70,7 +98,8 @@ class TabsStore {
       content,
       savedContent: content,
       cursor: { line: 1, col: 1 },
-      scrollRatio: 0,
+      editorScrollTop: 0,
+      previewRatio: 0,
     };
     this.list.push(tab);
     this.activeId = tab.id;
@@ -96,18 +125,27 @@ class TabsStore {
     if (tab) tab.cursor = { line, col };
   }
 
-  setScroll(id: string, ratio: number) {
+  setEditorScrollTop(id: string, top: number) {
     const tab = this.list.find((t) => t.id === id);
-    if (tab) tab.scrollRatio = ratio;
+    if (tab) tab.editorScrollTop = top;
+  }
+
+  setPreviewRatio(id: string, ratio: number) {
+    const tab = this.list.find((t) => t.id === id);
+    if (tab) tab.previewRatio = ratio;
   }
 
   activate(id: string) {
-    if (this.list.some((t) => t.id === id)) this.activeId = id;
+    if (!this.list.some((t) => t.id === id)) return;
+    if (this.activeId === id) return;
+    this.rememberActiveScroll();
+    this.activeId = id;
   }
 
   close(id: string) {
     const idx = this.list.findIndex((t) => t.id === id);
     if (idx === -1) return;
+    if (this.activeId === id) this.rememberActiveScroll();
     this.list.splice(idx, 1);
     if (this.activeId === id) {
       const next = this.list[idx] ?? this.list[idx - 1] ?? null;
@@ -119,6 +157,7 @@ class TabsStore {
     if (this.list.length < 2 || !this.activeId) return;
     const idx = this.list.findIndex((t) => t.id === this.activeId);
     const next = this.list[(idx + 1) % this.list.length];
+    this.rememberActiveScroll();
     this.activeId = next.id;
   }
 }

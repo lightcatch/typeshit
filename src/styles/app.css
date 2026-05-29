@@ -121,6 +121,7 @@ button:focus-visible {
   display: flex;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .app-pane {

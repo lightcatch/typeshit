@@ -2,34 +2,69 @@
   import { onMount, onDestroy } from "svelte";
   import { renderMarkdown } from "../markdown/renderer";
   import { scrollSync } from "../state/scroll";
-  import type { Tab } from "../state/tabs.svelte";
+  import { tabs, type Tab } from "../state/tabs.svelte";
 
   interface Props {
     tab: Tab;
+    active: boolean;
   }
-  let { tab }: Props = $props();
+  let { tab, active }: Props = $props();
 
   let scrollEl: HTMLDivElement;
+  let registeredActive = false;
 
   let html = $derived(renderMarkdown(tab.content));
 
-  onMount(() => {
+  function readRatio(): number {
+    if (!scrollEl) return 0;
+    const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+    if (max <= 0) return 0;
+    return Math.max(0, Math.min(1, scrollEl.scrollTop / max));
+  }
+
+  function rememberScroll() {
+    tabs.setPreviewRatio(tab.id, readRatio());
+  }
+
+  function becomeActive() {
     scrollSync.previewEl = scrollEl;
+    scrollSync.resetSource();
+    registeredActive = true;
+  }
+
+  function becomeInactive() {
+    rememberScroll();
+    registeredActive = false;
+    if (scrollSync.previewEl === scrollEl) scrollSync.previewEl = null;
+  }
+
+  function setActiveState(next: boolean) {
+    if (registeredActive === next) return;
+    if (next) becomeActive();
+    else becomeInactive();
+  }
+
+  onMount(() => {
+    setActiveState(active);
   });
 
   onDestroy(() => {
-    if (scrollSync.previewEl === scrollEl) scrollSync.previewEl = null;
+    if (registeredActive) becomeInactive();
+  });
+
+  $effect(() => {
+    setActiveState(active);
   });
 
   function handleScroll() {
-    if (!scrollEl) return;
-    const max = scrollEl.scrollHeight - scrollEl.clientHeight;
-    const ratio = max > 0 ? scrollEl.scrollTop / max : 0;
+    if (!scrollEl || !registeredActive) return;
+    const ratio = readRatio();
+    tabs.setPreviewRatio(tab.id, ratio);
     scrollSync.fromPreview(ratio);
   }
 </script>
 
-<div bind:this={scrollEl} class="preview-host" onscroll={handleScroll}>
+<div bind:this={scrollEl} class="preview-host" onscroll={handleScroll} aria-hidden={!active}>
   <article class="markdown-body">
     {@html html}
   </article>

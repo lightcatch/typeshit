@@ -1,4 +1,4 @@
-import { EditorState, Compartment } from "@codemirror/state";
+import { EditorState, Compartment, Transaction, type StateEffect } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { bracketMatching, indentOnInput, syntaxHighlighting, HighlightStyle } from "@codemirror/language";
@@ -104,7 +104,7 @@ export function makeEditor(opts: {
   isDark: boolean;
   onChange: (doc: string) => void;
   onCursor: (line: number, col: number) => void;
-  onScroll: (ratio: number) => void;
+  onScroll: (scrollTop: number, ratio: number) => void;
 }): EditorView {
   const updateListener = EditorView.updateListener.of((u) => {
     if (u.docChanged) opts.onChange(u.state.doc.toString());
@@ -120,7 +120,7 @@ export function makeEditor(opts: {
       const el = view.scrollDOM;
       const max = el.scrollHeight - el.clientHeight;
       const ratio = max > 0 ? el.scrollTop / max : 0;
-      opts.onScroll(ratio);
+      opts.onScroll(el.scrollTop, ratio);
     },
   });
 
@@ -146,7 +146,10 @@ export function makeEditor(opts: {
     ],
   });
 
-  return new EditorView({ state, parent: opts.parent });
+  return new EditorView({
+    state,
+    parent: opts.parent,
+  });
 }
 
 export function setEditorMarkdown(view: EditorView, isMarkdown: boolean) {
@@ -164,5 +167,21 @@ export function setEditorTheme(view: EditorView, isDark: boolean) {
 export function setEditorDoc(view: EditorView, doc: string) {
   view.dispatch({
     changes: { from: 0, to: view.state.doc.length, insert: doc },
+  });
+}
+
+export function switchEditorTab(
+  view: EditorView,
+  doc: string,
+  isMarkdown: boolean,
+  selectionAnchor = 0,
+) {
+  const anchor = Math.max(0, Math.min(selectionAnchor, doc.length));
+  view.dispatch({
+    changes: { from: 0, to: view.state.doc.length, insert: doc },
+    selection: { anchor },
+    effects: [langCompartment.reconfigure(isMarkdown ? markdown({ base: markdownLanguage }) : [])],
+    scrollIntoView: false,
+    annotations: Transaction.addToHistory.of(false),
   });
 }
